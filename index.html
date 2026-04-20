@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>共鸣域</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- 背景 -->
+    <div class="background"></div>
+
+    <!-- 主容器 -->
+    <div class="container">
+        <!-- 左侧：帐篷展示区 -->
+        <div class="tent-area" id="tentArea">
+            <!-- 帐篷背景层 -->
+            <canvas id="tentBackCanvas" class="tent-layer"></canvas>
+            <!-- 颜色填充层 -->
+            <div id="colorLayer" class="tent-layer" style="pointer-events: none;"></div>
+            <!-- 枕头层（在背景和前景之间） -->
+            <div id="pillowContainer" class="pillow-container"></div>
+            <!-- 摆件层（在背景和前景之间） -->
+            <div id="itemContainer" class="item-container"></div>
+            <!-- 帐篷前景层（线稿） -->
+            <canvas id="tentFrontCanvas" class="tent-layer"></canvas>
+            
+        </div>
+
+        <!-- 右侧：控制面板 -->
+        <div class="control-panel">
+            <!-- UI按钮区域 -->
+            <div class="ui-buttons">
+                <img src="ui/ui_background.png" alt="背景" class="ui-background">
+                <div class="ui-buttons-content">
+                    <img src="ui/ui_tent.png" alt="选择帐篷" class="ui-btn" data-section="tent">
+                    <img src="ui/ui_color.png" alt="选择颜色" class="ui-btn" data-section="color">
+                    <img src="ui/ui_pillow.png" alt="选择枕头" class="ui-btn" data-section="pillow">
+                    <img src="ui/ui_item.png" alt="选择摆件" class="ui-btn" data-section="item">
+                </div>
+            </div>
+
+            <!-- 素材选择区域 -->
+            <div class="selection-area">
+                <!-- 帐篷选择 -->
+                <div class="selection-content" id="tentSelection" style="display: none;">
+                    <div class="tent-options">
+                        <button class="tent-btn" data-tent="1">
+                            <img src="tent/tent1.png" alt="帐篷1">
+                        </button>
+                        <button class="tent-btn" data-tent="2">
+                            <img src="tent/tent2.png" alt="帐篷2">
+                        </button>
+                        <button class="tent-btn" data-tent="3">
+                            <img src="tent/tent3.png" alt="帐篷3">
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 颜色选择 -->
+                <div class="selection-content" id="colorSelection" style="display: none;">
+                    <!-- 预设颜色选项 -->
+                    <div class="preset-colors">
+                        <img src="ui/color_red.png" alt="红色" class="color-preset-btn" data-color="#E68E81" data-name="red">
+                        <img src="ui/color_yellow.png" alt="黄色" class="color-preset-btn" data-color="#FEF3DB" data-name="yellow">
+                        <img src="ui/color_green.png" alt="绿色" class="color-preset-btn" data-color="#B8DEBE" data-name="green">
+                        <img src="ui/color_purple.png" alt="紫色" class="color-preset-btn" data-color="#DDC6DE" data-name="purple">
+                        <img src="ui/color_gray.png" alt="灰色" class="color-preset-btn" data-color="#DBE8F2" data-name="gray">
+                    </div>
+                    <!-- RGB颜色选择器 -->
+                    <div class="color-picker-container">
+                        <label for="colorPicker" style="display: block; text-align: center; margin-bottom: 5px; font-size: 12px;">自定义颜色</label>
+                        <input type="color" id="colorPicker" value="#ffffff">
+                    </div>
+                </div>
+
+                <!-- 枕头选择 -->
+                <div class="selection-content" id="pillowSelection" style="display: none;">
+                    <div class="pillow-options">
+                        <button class="pillow-btn" data-pillow="1">
+                            <img src="Pillow/未命名作品-1.png" alt="枕头1">
+                        </button>
+                        <button class="pillow-btn" data-pillow="2">
+                            <img src="Pillow/未命名作品-2.png" alt="枕头2">
+                        </button>
+                        <button class="pillow-btn" data-pillow="3">
+                            <img src="Pillow/未命名作品-3.png" alt="枕头3">
+                        </button>
+                    </div>
+                </div>
+
+                <!-- 摆件选择 -->
+                <div class="selection-content" id="itemSelection" style="display: none;">
+                    <div class="item-options" id="itemOptions">
+                        <!-- 动态生成摆件按钮 -->
+                    </div>
+                </div>
+            </div>
+            <!-- 确认按钮 -->
+            <button id="confirmBtn" class="confirm-btn">
+                <img src="ui/ui_confirm1.png" alt="确认保存">
+            </button>
+        </div>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
