@@ -182,7 +182,7 @@ body {
 }
 
 .ui-btn {
-    width: 30px;
+    width: 40px;
     height: auto;
     cursor: pointer;
     transition: all 0.3s;
@@ -229,8 +229,8 @@ body {
 }
 
 .tent-btn {
-    width: 80px;
-    height: 80px;
+    width: 100px;
+    height: 100px;
     border: 3px solid transparent;
     border-radius: 8px;
     background: white;
@@ -305,8 +305,8 @@ body {
 }
 
 .pillow-btn {
-    width: 70px;
-    height: 70px;
+    width: 100px;
+    height: 100px;
     border: 3px solid transparent;
     border-radius: 8px;
     background: white;

@@ -492,15 +492,80 @@ function addItem(fileName) {
         itemDiv.appendChild(img);
         itemContainer.appendChild(itemDiv);
         
+        clampElementToTentBounds(itemDiv);
         makeDraggable(itemDiv);
         makeResizable(itemDiv);
     };
+}
+
+function getTentBoundsInContainer(container) {
+    const tentRect = tentBackCanvas.getBoundingClientRect();
+    const containerRect = container.getBoundingClientRect();
+    return {
+        left: tentRect.left - containerRect.left,
+        top: tentRect.top - containerRect.top,
+        right: tentRect.right - containerRect.left,
+        bottom: tentRect.bottom - containerRect.top
+    };
+}
+
+function clampElementToTentBounds(element) {
+    const parent = element.offsetParent || itemContainer;
+    const bounds = getTentBoundsInContainer(parent);
+    const maxLeft = Math.max(bounds.left, bounds.right - element.offsetWidth);
+    const maxTop = Math.max(bounds.top, bounds.bottom - element.offsetHeight);
+    const nextLeft = Math.min(Math.max(element.offsetLeft, bounds.left), maxLeft);
+    const nextTop = Math.min(Math.max(element.offsetTop, bounds.top), maxTop);
+    element.style.left = nextLeft + 'px';
+    element.style.top = nextTop + 'px';
+    element.style.transform = 'none';
+}
+
+function getTentAlphaAtClientPoint(clientX, clientY) {
+    if (!gameState.originalBackImageData || !gameState.originalFrontImageData) return false;
+    const tentRect = tentBackCanvas.getBoundingClientRect();
+    if (tentRect.width <= 0 || tentRect.height <= 0) return false;
+    if (clientX < tentRect.left || clientX > tentRect.right || clientY < tentRect.top || clientY > tentRect.bottom) return false;
+
+    const xRatio = (clientX - tentRect.left) / tentRect.width;
+    const yRatio = (clientY - tentRect.top) / tentRect.height;
+    const x = Math.max(0, Math.min(tentBackCanvas.width - 1, Math.floor(xRatio * tentBackCanvas.width)));
+    const y = Math.max(0, Math.min(tentBackCanvas.height - 1, Math.floor(yRatio * tentBackCanvas.height)));
+    const pixelIndex = (y * tentBackCanvas.width + x) * 4 + 3;
+
+    const backAlpha = gameState.originalBackImageData.data[pixelIndex] || 0;
+    const frontAlpha = gameState.originalFrontImageData.data[pixelIndex] || 0;
+    return backAlpha > 0 || frontAlpha > 0;
+}
+
+function isElementInsideTentOpaquePixels(element) {
+    const rect = element.getBoundingClientRect();
+    const centerX = rect.left + rect.width / 2;
+    const centerY = rect.top + rect.height / 2;
+    // 仅要求中心点落在帐篷非透明区域内，避免矩形四角导致无法拖动
+    return getTentAlphaAtClientPoint(centerX, centerY);
+}
+
+function updatePositionWithTentMask(element, nextLeft, nextTop, state) {
+    element.style.left = nextLeft + 'px';
+    element.style.top = nextTop + 'px';
+    element.style.transform = 'none';
+    clampElementToTentBounds(element);
+
+    if (isElementInsideTentOpaquePixels(element)) {
+        state.lastValidLeft = element.offsetLeft;
+        state.lastValidTop = element.offsetTop;
+    }
 }
 
 // 使元素可拖拽
 function makeDraggable(element) {
     let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
     let isDragging = false;
+    const state = {
+        lastValidLeft: element.offsetLeft,
+        lastValidTop: element.offsetTop
+    };
     
     element.addEventListener('mousedown', dragMouseDown);
     element.addEventListener('touchstart', dragTouchStart, { passive: false });
@@ -536,9 +601,9 @@ function makeDraggable(element) {
         pos3 = e.clientX;
         pos4 = e.clientY;
         
-        element.style.top = (element.offsetTop - pos2) + 'px';
-        element.style.left = (element.offsetLeft - pos1) + 'px';
-        element.style.transform = 'none';
+        const nextTop = element.offsetTop - pos2;
+        const nextLeft = element.offsetLeft - pos1;
+        updatePositionWithTentMask(element, nextLeft, nextTop, state);
     }
     
     function elementTouchDrag(e) {
@@ -550,12 +615,17 @@ function makeDraggable(element) {
         pos3 = touch.clientX;
         pos4 = touch.clientY;
         
-        element.style.top = (element.offsetTop - pos2) + 'px';
-        element.style.left = (element.offsetLeft - pos1) + 'px';
-        element.style.transform = 'none';
+        const nextTop = element.offsetTop - pos2;
+        const nextLeft = element.offsetLeft - pos1;
+        updatePositionWithTentMask(element, nextLeft, nextTop, state);
     }
     
     function closeDragElement() {
+        if (!isElementInsideTentOpaquePixels(element)) {
+            element.style.left = state.lastValidLeft + 'px';
+            element.style.top = state.lastValidTop + 'px';
+            element.style.transform = 'none';
+        }
         isDragging = false;
         document.removeEventListener('mousemove', elementDrag);
         document.removeEventListener('mouseup', closeDragElement);
@@ -571,6 +641,10 @@ function makeResizable(element) {
         
         const currentWidth = element.offsetWidth;
         const currentHeight = element.offsetHeight;
+        const prevWidth = currentWidth;
+        const prevHeight = currentHeight;
+        const prevLeft = element.offsetLeft;
+        const prevTop = element.offsetTop;
         const delta = e.deltaY > 0 ? 0.9 : 1.1;
         
         const newWidth = currentWidth * delta;
@@ -580,6 +654,15 @@ function makeResizable(element) {
         if (newWidth > 30 && newWidth < 500) {
             element.style.width = newWidth + 'px';
             element.style.height = newHeight + 'px';
+            clampElementToTentBounds(element);
+
+            if (!isElementInsideTentOpaquePixels(element)) {
+                element.style.width = prevWidth + 'px';
+                element.style.height = prevHeight + 'px';
+                element.style.left = prevLeft + 'px';
+                element.style.top = prevTop + 'px';
+                element.style.transform = 'none';
+            }
         }
     }, { passive: false });
     
@@ -615,6 +698,10 @@ document.getElementById('confirmBtn').addEventListener('click', function() {
     
     tempCanvas.width = width;
     tempCanvas.height = height;
+
+    const tentRect = tentBackCanvas.getBoundingClientRect();
+    const scaleX = width / tentRect.width;
+    const scaleY = height / tentRect.height;
     
     // 绘制背景层
     tempCtx.drawImage(tentBackCanvas, 0, 0);
@@ -625,12 +712,10 @@ document.getElementById('confirmBtn').addEventListener('click', function() {
         const img = item.querySelector('img');
         if (img && img.complete) {
             const rect = item.getBoundingClientRect();
-            const containerRect = document.getElementById('tentArea').getBoundingClientRect();
-            
-            const x = rect.left - containerRect.left;
-            const y = rect.top - containerRect.top;
-            const w = rect.width;
-            const h = rect.height;
+            const x = (rect.left - tentRect.left) * scaleX;
+            const y = (rect.top - tentRect.top) * scaleY;
+            const w = rect.width * scaleX;
+            const h = rect.height * scaleY;
             
             tempCtx.drawImage(img, x, y, w, h);
         }
@@ -642,12 +727,10 @@ document.getElementById('confirmBtn').addEventListener('click', function() {
         const img = item.querySelector('img');
         if (img && img.complete) {
             const rect = item.getBoundingClientRect();
-            const containerRect = document.getElementById('tentArea').getBoundingClientRect();
-            
-            const x = rect.left - containerRect.left;
-            const y = rect.top - containerRect.top;
-            const w = rect.width;
-            const h = rect.height;
+            const x = (rect.left - tentRect.left) * scaleX;
+            const y = (rect.top - tentRect.top) * scaleY;
+            const w = rect.width * scaleX;
+            const h = rect.height * scaleY;
             
             tempCtx.drawImage(img, x, y, w, h);
         }
